@@ -132,6 +132,7 @@ function formatPostContents(text) {
     //introducing... SHEEEEEESH
     for (var i = 0; i < o.length; i++) {
         o = o.split(`SH${"E".repeat(i)}SH`).join(`<RainbowText>SH${"E".repeat(i)}SH</RainbowText>`);
+        o = o.split(`sh${"e".repeat(i)}sh`).join(`<RainbowText>SH${"E".repeat(i)}SH</RainbowText>`);
     }
     return o;
 }
