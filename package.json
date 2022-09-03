@@ -1,0 +1,26 @@
+{
+  "name": "scriptegy-hubs-codebase-b",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@ckeditor/ckeditor5-build-classic": "^35.1.0",
+    "@faker-js/faker": "^7.4.0",
+    "bcrypt": "^5.0.1",
+    "chalk": "^4.1.2",
+    "crypto-js": "^4.1.1",
+    "cryptr": "^6.0.3",
+    "dompurify": "^2.3.10",
+    "easy-encryption": "^0.1.1",
+    "express": "^4.18.1",
+    "figlet": "^1.5.2",
+    "isomorphic-dompurify": "^0.20.0",
+    "simple-encryptor": "^4.0.0"
+  }
+}
