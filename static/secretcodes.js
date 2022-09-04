@@ -214,7 +214,7 @@ function FeedButtonContent(bucket) {
         if (!bucket.clicks && bucket.clicks != 0) {
             bucket.clicks = 3;
         }
-        var output = element("button").innerHTML(bucket.text + ` (${bucket.clicks}) ` + "<style>.whiteTx{color:white;}</style>").padding(18).paddingTop(7).paddingBottom(7).fontSize(18).transform("translateY(-5px)").borderRadius("10px").borderWidth(0).backgroundColor("red").class("whiteTx").marginLeft(20).onclick(()=>{
+        var output = element("button").cursor("pointer").innerHTML(bucket.text + ` (${bucket.clicks}) ` + "<style>.whiteTx{color:white;}</style>").padding(18).paddingTop(7).paddingBottom(7).fontSize(18).transform("translateY(-5px)").borderRadius("10px").borderWidth(0).backgroundColor("red").class("whiteTx").marginLeft(20).onclick(()=>{
             bucket.clicks--;
             if (bucket.clicks == 0) {
                 bucket.onclick();
@@ -229,7 +229,7 @@ function FeedButtonContent(bucket) {
         }
         return output;
     } else {
-        var output = element("button").innerHTML(bucket.text + "<style>.whiteTx{color:white;}</style>").padding(18).paddingTop(7).paddingBottom(7).fontSize(18).transform("translateY(-5px)").borderRadius("10px").borderWidth(0).backgroundColor("rgb(64,128,255)").class("whiteTx").marginLeft(20).onclick(bucket.onclick).display("inline");
+        var output = element("button").cursor("pointer").innerHTML(bucket.text + "<style>.whiteTx{color:white;}</style>").padding(18).paddingTop(7).paddingBottom(7).fontSize(18).transform("translateY(-5px)").borderRadius("10px").borderWidth(0).backgroundColor("rgb(64,128,255)").class("whiteTx").marginLeft(20).onclick(bucket.onclick).display("inline");
         if (innerWidth < 800) {
             output.class("w100");
             output = element("div").children(element("br"), output);
@@ -650,7 +650,7 @@ function RainbowText(bucket) {
     var elm = element("span");
 
     for (var i = 0; i < bucket.content.length; i++) {
-        elm.children(element("span").innerHTML(bucket.content[i]).color(hsl(((new Date().getTime() + (i * 100)) / 10) % 360,100,50)).fontSize(lerp(16,20,Math.sin((new Date().getTime() / 100)+(i*0.5)))));
+        elm.children(element("span").innerHTML(bucket.content[i]).color(hsl(((new Date().getTime() + (i * 100)) / 10) % 360,100,50)).fontSize(lerp(18,20,Math.sin((new Date().getTime() / 100)+(i*0.5)))));
     }
 
     return elm;
@@ -687,7 +687,7 @@ function WritePost(bucket) {
         bucket.cache = element("div").padding(10).paddingLeft(50).paddingTop(25).children(
             error,
             element("UserView").initialize({ username: localStorage.username, img: bucket.img }),
-            element("p").contentEditable().fontSize(17).marginLeft(41).padding(50).backgroundColor("rgba(128,128,128,0.1)").borderRadius("15px").id("postInput"),
+            element("p").contentEditable().fontSize(17).marginLeft(41).padding(innerWidth/45).backgroundColor("rgba(128,128,128,0.1)").borderRadius("15px").id("postInput"),
             element("button").text("Post").padding(18).paddingTop(7).paddingBottom(7).fontSize(18).margin(20).marginTop(0).marginBottom(0).transform("translateY(-5px)").borderRadius("10px").borderWidth(0).backgroundColor("rgb(64,128,255)").class("whiteTx").onclick(() => {
                 fetch(`/api/writepost?token=${localStorage.token}&content=${encodeURIComponent(document.getElementById("postInput").innerHTML)}&feed=${window.location.hash.slice(1)}&repost=${activeRepost}`).then(res => res.json()).then((json) => {
                     if (json.success) {
@@ -766,7 +766,9 @@ function Rating(bucket) {
             element("img").src("thumbs-up.svg").mixBlendMode("difference").cursor("pointer").onclick(()=>{
                 RatePost(1); 
             }).width(leftScale*24),
-            element("span").text(bucket.myBucket.score + " pts"),
+            element("span").text(bucket.myBucket.score + " pts").cursor("pointer").onclick(()=>{
+                RatePost(0); 
+            }),
             element("img").src("thumbs-down.svg").mixBlendMode("difference").cursor("pointer").onclick(()=>{
                 RatePost(-1);
             }).width(rightScale*24)

@@ -85,7 +85,6 @@ function beginWatchDatabase() {
 }
 
 function saveDb() {
-    console.log(JSON.stringify(database));
     fs.writeFileSync("database.json",cryptr.encrypt(JSON.stringify(database)),() => {});
 }
 
@@ -291,7 +290,6 @@ function usernameOfToken(token) {
             return username;
         }
     }
-    console.log(chalk.bgBlue.black('INFO') + " expired login.");
     return null;
 }
 
@@ -323,7 +321,6 @@ function getContentOfPost(id,token) {
     for (var i in output.ratings) {
         output.score += output.ratings[i];
     }
-    console.log(usernameOfToken(token));
     output.myRating = output.ratings[usernameOfToken(token)];
     output.ratings = null;
     return output;
