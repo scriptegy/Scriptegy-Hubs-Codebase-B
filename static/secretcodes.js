@@ -147,7 +147,7 @@ function ToggleTheme(bucket) {
         if (localStorage.lightMode == "on") {
             bucket.cache = element("img").src("sun.svg").display("inline").onclick(() => {
                 localStorage.lightMode = null;
-            });
+            }).backgroundBlendMode("difference");
         } else {
             bucket.cache = element("img").src("moon.svg").display("inline").filter("invert(1)").onclick(() => {
                 localStorage.lightMode = "on";
@@ -537,6 +537,13 @@ function Login(bucket) {
                 if (text.token) {
                     localStorage.token = text.token;
                     window.history.back();
+                    fetch(`/api/usernameoftoken?token=${localStorage.token}`).then(res => res.json()).then(res => {
+                        if (!res.username) {
+                            localStorage.removeItem('token');
+                        } else {
+                            localStorage.username = res.username;
+                        }
+                    });
                 }
             });
         }),
@@ -598,6 +605,13 @@ function SignupButton(bucket) {
                     if (text.token) {
                         localStorage.token = text.token;
                         window.history.back();
+                        fetch(`/api/usernameoftoken?token=${localStorage.token}`).then(res => res.json()).then(res => {
+                            if (!res.username) {
+                                localStorage.removeItem('token');
+                            } else {
+                                localStorage.username = res.username;
+                            }
+                        });
                     }
                 });
             }
@@ -645,20 +659,21 @@ function RainbowText(bucket) {
 function Post(bucket) {
     if (!bucket.downloaded) {
         bucket.downloaded = true;
-        fetch(`/api/post?id=${bucket.id}`).then(res => res.text()).then(json => {
+        fetch(`/api/post?id=${bucket.id}&token=${localStorage.token}`).then(res => res.text()).then(json => {
             localStorage["post_" + bucket.id] = json;
+            console.log(JSON.parse(json));
         });
     }
     if (localStorage["post_" + bucket.id]) {
         var post = JSON.parse(localStorage["post_" + bucket.id]);
-        var o = element("PostView").initialize({ username: post.username, text: post.text, img: "Disco_Logo.png", feed: post.feed, repost: post.repost, id: bucket.id });
-        /*if (post.banned) {
+        var o = element("PostView").initialize({ username: post.username, text: post.text, img: "Disco_Logo.png", feed: post.feed, repost: post.repost, id: bucket.id, score: post.score, ratings: post.ratings, personalBucket:bucket, myRating: post.myRating});
+        if (post.banned) {
             if (!bucket.visible) {
                 return element("p").text("this post is from a banned user. click to show.").fontWeight("bold").onclick(()=>{
                     bucket.visible = true;
                 }).cursor("pointer");
             }
-        }*/
+        }
         return o;
         //return element("div").children(element("span").text(post.username).fontSize(18),element("div").innerHTML(post.text)).padding(25).margin(30).borderRadius("15px").boxShadow("0 10px 20px rgba(0,0,0,0.4)").backgroundColor("rgb(250,250,250)");
     } else {
@@ -695,6 +710,10 @@ function WritePost(bucket) {
 }
 
 function PostView(bucket) {
+    if (bucket.score != bucket.pScore) {
+        bucket.pScore = bucket.score;
+        bucket.cache = null;
+    }
     if (!bucket.cache) {
         var main = element("div").padding(10).paddingLeft(50).paddingTop(25).children(element("UserView").initialize({ username: bucket.username, img: bucket.img }), element("p").innerHTML(bucket.text).fontSize(17).marginLeft(41).overflow("hidden")).shadowTheme(3, 15).borderRadius("10px").marginBottom(25).backgroundTheme("background");
         if (bucket.repost) {
@@ -707,6 +726,11 @@ function PostView(bucket) {
                 window.location.hash = bucket.feed;
             }).paddingLeft(41).fontStyle("italic"));
         }
+        if (bucket.score != null) {
+            main.children(element("Rating").initialize({
+                myBucket:bucket
+            }));
+        }
         if (!bucket.repost) {
             main.children(element("p").text("repost").cursor("pointer").onclick(() => {
                 activeRepost = bucket.id;
@@ -714,6 +738,39 @@ function PostView(bucket) {
             }).fontWeight("bold").marginLeft(41));
         }
         bucket.cache = main;
+    }
+    return bucket.cache;
+}
+function Rating(bucket) {
+    function RatePost(rating) {
+        console.log('rating at ' + rating);
+        fetch(`/api/ratePost?token=${localStorage.token}&id=${bucket.myBucket.id}&rating=${rating}`).then(res => res.json).then(data => {
+            fetch(`/api/post?id=${bucket.myBucket.id}&token=${localStorage.token}`).then(res => res.text()).then(json => {
+                localStorage["post_" + bucket.myBucket.id] = json;
+                bucket.myBucket.cache = null;
+            });
+        });
+    }
+    if (!bucket.cache) {
+        var leftScale = 1;
+        var rightScale = 1;
+        if (bucket.myBucket.myRating == 1) {
+            leftScale = 1.1;
+            rightScale = 0.8;
+        }
+        if (bucket.myBucket.myRating == -1) {
+            leftScale = 0.8;
+            rightScale = 1.1;
+        }
+        bucket.cache = element("div").children(
+            element("img").src("thumbs-up.svg").mixBlendMode("difference").cursor("pointer").onclick(()=>{
+                RatePost(1); 
+            }).width(leftScale*24),
+            element("span").text(bucket.myBucket.score + " pts"),
+            element("img").src("thumbs-down.svg").mixBlendMode("difference").cursor("pointer").onclick(()=>{
+                RatePost(-1);
+            }).width(rightScale*24)
+        ).display("flex").alignItems("center").justifyContent("flex-start").gap("10px").flexDirection("row").alignContent("center").marginLeft(41);
     }
     return bucket.cache;
 }

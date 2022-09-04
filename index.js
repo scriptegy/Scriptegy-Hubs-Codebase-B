@@ -11,6 +11,16 @@ if (secretKey == "7x!A%D*G-JaNdRgUkXp2s5v8y/B?E(H+") {
 const Cryptr = require('cryptr');
 const cryptr = new Cryptr(secretKey);
 
+Math.clamp = function (value,min,max) {
+    if (value < min) {
+        return min;
+    }
+    if (value > max) {
+        return max;
+    }
+    return value;
+}
+
 var database = {
     tokens: {
         exampleuser: 'exampletoken'
@@ -75,6 +85,7 @@ function beginWatchDatabase() {
 }
 
 function saveDb() {
+    console.log(JSON.stringify(database));
     fs.writeFileSync("database.json",cryptr.encrypt(JSON.stringify(database)),() => {});
 }
 
@@ -87,6 +98,7 @@ beginWatchDatabase();
 
 
 const { faker } = require('@faker-js/faker');
+const { resolveSoa } = require('dns');
 
 function signup(username, password) {
     if (!database.users[username]) {
@@ -157,7 +169,8 @@ function post(token, text, feed, repost) {
             username: username,
             text: tx2,
             feed: feed,
-            repost: repost
+            repost: repost,
+            ratings: {}
         };
         if (!database.feeds[feed]) {
             database.feeds[feed] = [];
@@ -227,6 +240,10 @@ function extractTokens(str) {
     return tokens;
 }
 
+function breakObjectPointer(obj) {
+    return JSON.parse(JSON.stringify(obj)); //legacy method deleted properties.. still no idea why
+}
+
 function getFeedLatestPosts(feed,token) {
     var username = usernameOfToken(token);
     if (username) {
@@ -234,12 +251,12 @@ function getFeedLatestPosts(feed,token) {
     }
     if (feed == "notifications") {
         if (username) {
-            return {posts: JSON.parse(JSON.stringify(database.users[username].notifications)).reverse(), count: database.users[username].notifications.length, blurb: "its time to read what people think of you..."}
+            return {posts: breakObjectPointer(database.users[username].notifications).reverse(), count: database.users[username].notifications.length, blurb: "its time to read what people think of you..."}
         }
     }
     if (feed == "feed") {
         if (username) {
-            return {posts: JSON.parse(JSON.stringify(database.users[username].personalFeed)).reverse(), count: database.users[username].personalFeed.length, blurb: "your personal source of s***posts"}
+            return {posts: breakObjectPointer(database.users[username].personalFeed).reverse(), count: database.users[username].personalFeed.length, blurb: "your personal source of s***posts"}
         }
     }
     if (!database.feeds[feed]) {
@@ -278,13 +295,49 @@ function usernameOfToken(token) {
     return null;
 }
 
-function getContentOfPost(id) {
+function breakObjectPointerWithoutSideEffects(obj) {
+    if (typeof obj != 'object') {
+        return obj;
+    }
+    if (obj == null) {
+        return null;
+    }
+    var newObject = {};
+    for (var i in obj) {
+        newObject[i] = breakObjectPointerWithoutSideEffects(obj[i]);
+    }
+    return newObject;
+}
+
+function getContentOfPost(id,token) {
     try {
         if (database.bannedUsers.includes(database.posts[id].username)) {
-            return Object.assign(database.posts[id],{banned:true});
+            return Object.assign(breakObjectPointerWithoutSideEffects(database.posts[id]),{banned:true});
         }
     } catch {}
-    return database.posts[id] || {username:"unknown",text:"This post no longer exists."};
+    var output = breakObjectPointerWithoutSideEffects(database.posts[id] || {username:"unknown",text:"This post no longer exists."});
+    output.score = 0;
+    if (output.ratings == null) {
+        output.ratings = {};
+    }
+    for (var i in output.ratings) {
+        output.score += output.ratings[i];
+    }
+    console.log(usernameOfToken(token));
+    output.myRating = output.ratings[usernameOfToken(token)];
+    output.ratings = null;
+    return output;
+}
+
+function ratePost(id,token,rating) {
+    try {
+        if (database.posts[id].ratings == null) {
+            database.posts[id].ratings = {};
+        }
+        database.posts[id].ratings[usernameOfToken(token)] = Math.clamp(parseFloat(rating),-1,1);
+    } catch(e) {
+    }
+    return {};
 }
 
 function updateUser(user) {
@@ -310,7 +363,7 @@ const port = 3000
 app.use(express.static('static',{extensions: ['html']}));
 
 app.get('/api/post', (req, res) => {
-    res.send(getContentOfPost(req.query.id))
+    res.send(getContentOfPost(req.query.id,req.query.token))
 })
 
 app.get('/api/feed', (req, res) => {
@@ -339,6 +392,10 @@ app.get('/api/ban', (req, res) => {
 });
 app.get('/api/unban', (req, res) => {
     unbanUser(req.query.token,req.query.username);
+});
+app.get('/api/ratePost', (req, res) => {
+    ratePost(req.query.id,req.query.token,req.query.rating);
+    res.send({success:true});
 });
 
 app.get('/api/writepost', (req, res) => {
