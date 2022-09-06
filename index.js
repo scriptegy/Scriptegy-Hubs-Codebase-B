@@ -240,7 +240,7 @@ function extractTokens(str) {
 }
 
 function breakObjectPointer(obj) {
-    return JSON.parse(JSON.stringify(obj)); //legacy method deleted properties.. still no idea why
+    return structuredClone(obj); //legacy method deleted properties.. still no idea why
 }
 
 function getFeedLatestPosts(feed,token) {
@@ -294,6 +294,7 @@ function usernameOfToken(token) {
 }
 
 function breakObjectPointerWithoutSideEffects(obj) {
+    return structuredClone(obj);
     if (typeof obj != 'object') {
         return obj;
     }
